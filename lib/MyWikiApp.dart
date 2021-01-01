@@ -42,7 +42,7 @@ class _MyWikiAppState extends State<MyWikiApp> {
                 decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.all(Radius.circular(6.0)),
-                    border: Border.all(color: Colors.grey)),
+                    border: Border.all(color: Colors.black)),
                 child: Center(
                   child: TextField(
                       textAlignVertical: TextAlignVertical.center,
@@ -73,15 +73,22 @@ class _MyWikiAppState extends State<MyWikiApp> {
                     )
                   : Expanded(
                       flex: 7,
-                      child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: _resultsToBeDisplayed.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            var curResult = _resultsToBeDisplayed[index];
-                            return Padding(
-                                padding: const EdgeInsets.fromLTRB(0, 8, 0, 8),
-                                child: SearchResultCard(curResult));
-                          }),
+                      child: _resultsToBeDisplayed.isEmpty
+                          ? Opacity(
+                              opacity: 0.6,
+                              child: Image.asset("images/wiki_placeholder.png",
+                                  height: 200, width: 200),
+                            )
+                          : ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: _resultsToBeDisplayed.length,
+                              itemBuilder: (BuildContext context, int index) {
+                                var curResult = _resultsToBeDisplayed[index];
+                                return Padding(
+                                    padding:
+                                        const EdgeInsets.fromLTRB(0, 8, 0, 8),
+                                    child: SearchResultCard(curResult));
+                              }),
                     )
             ],
           ),
