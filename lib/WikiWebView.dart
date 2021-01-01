@@ -118,6 +118,35 @@ class _WikiWebViewState extends State<WikiWebView> {
                   },
                 ),
               ),
+              ButtonBar(
+                alignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  RaisedButton(
+                    child: Icon(Icons.arrow_back),
+                    onPressed: () {
+                      if (_webView != null) {
+                        _webView.goBack();
+                      }
+                    },
+                  ),
+                  RaisedButton(
+                    child: Icon(Icons.arrow_forward),
+                    onPressed: () {
+                      if (_webView != null) {
+                        _webView.goForward();
+                      }
+                    },
+                  ),
+                  RaisedButton(
+                    child: Icon(Icons.refresh),
+                    onPressed: () {
+                      if (_webView != null) {
+                        _webView.reload();
+                      }
+                    },
+                  ),
+                ],
+              ),
             ]),
     );
   }
