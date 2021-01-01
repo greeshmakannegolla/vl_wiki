@@ -34,15 +34,20 @@ class _WikiWebViewState extends State<WikiWebView> {
 
   void _prepareURL() {
     checkInternetConnectivity().then((internetActive) async {
+      String directory;
+      if (Platform.isAndroid) {
+        directory = (await getExternalStorageDirectory()).path;
+      }
+
       _url =
           'https://en.m.wikipedia.org/?curid=${widget.searchResult.pageid.toString()}';
       if (!internetActive) {
         bool cacheExists = await File(
-                "/storage/emulated/0/Android/data/com.example.wiki/files/${widget.searchResult.pageid.toString()}.mht")
+                "$directory/${widget.searchResult.pageid.toString()}.mht")
             .exists();
         if (cacheExists) {
           _url =
-              "file:///storage/emulated/0/Android/data/com.example.wiki/files/${widget.searchResult.pageid.toString()}.mht";
+              "file://$directory/${widget.searchResult.pageid.toString()}.mht";
           _offlineContent = true;
         } else {
           await showAlert(context, "Oops!",
