@@ -92,12 +92,15 @@ class _MyWikiAppState extends State<MyWikiApp> {
                                     )
                                   : Container(),
                               results.isEmpty
-                                  ? Opacity(
-                                      opacity: 0.6,
-                                      child: Image.asset(
-                                          "images/wiki_placeholder.png",
-                                          height: 200,
-                                          width: 200),
+                                  ? Padding(
+                                      padding: const EdgeInsets.only(top: 200),
+                                      child: Opacity(
+                                        opacity: 0.6,
+                                        child: Image.asset(
+                                            "images/wiki_placeholder.png",
+                                            height: 200,
+                                            width: 200),
+                                      ),
                                     )
                                   : ListView.builder(
                                       shrinkWrap: true,

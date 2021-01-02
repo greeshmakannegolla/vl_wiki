@@ -6,24 +6,24 @@ import 'dart:convert' as convert;
 import 'package:http/http.dart' as http;
 
 class SearchResultBloc {
-  final _stateStreamController =
+  final _searchResultStreamController =
       StreamController<List<SearchResult>>(sync: true);
   StreamSink<List<SearchResult>> get _searchResultSink =>
-      _stateStreamController.sink;
+      _searchResultStreamController.sink;
   Stream<List<SearchResult>> get searchResultStream =>
-      _stateStreamController.stream;
+      _searchResultStreamController.stream;
 
-  final _eventStreamController = StreamController<String>(sync: true);
-  StreamSink<String> get searchEventSink => _eventStreamController.sink;
-  Stream<String> get _searchEventStream => _eventStreamController.stream;
+  final _searchEventStreamController = StreamController<String>(sync: true);
+  StreamSink<String> get searchEventSink => _searchEventStreamController.sink;
+  Stream<String> get _searchEventStream => _searchEventStreamController.stream;
 
   bool offlineContent = false;
 
   SearchResultBloc() {
     _searchEventStream.listen((searchWord) async {
       try {
-        var resultsToBeDisplayed = await _fetchResults(searchWord);
-        _searchResultSink.add(resultsToBeDisplayed);
+        var results = await _fetchResults(searchWord);
+        _searchResultSink.add(results);
       } on Exception catch (e) {
         print(e.toString);
         _searchResultSink.addError("Something went wrong. Try again later");
@@ -32,8 +32,8 @@ class SearchResultBloc {
   }
 
   void dispose() {
-    _stateStreamController.close();
-    _eventStreamController.close();
+    _searchResultStreamController.close();
+    _searchEventStreamController.close();
   }
 
   Future<List<SearchResult>> _fetchResults(String searchWord) async {
