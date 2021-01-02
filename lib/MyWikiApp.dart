@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:convert' as convert;
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wiki/Model.dart';
 import 'package:wiki/SearchResultCard.dart';
-import 'package:wiki/Utils.dart';
+import 'package:wiki/SearchResultsBloc.dart';
 
 class MyWikiApp extends StatefulWidget {
   MyWikiApp({Key key}) : super(key: key);
@@ -15,9 +12,19 @@ class MyWikiApp extends StatefulWidget {
 
 class _MyWikiAppState extends State<MyWikiApp> {
   TextEditingController _searchbar = TextEditingController();
-  List<SearchResult> _resultsToBeDisplayed = [];
-  bool _loading = false;
-  bool _offlineMode = false;
+  final _searchBloc = SearchResultBloc();
+
+  @override
+  void initState() {
+    super.initState();
+    _searchBloc.searchEventSink.add("");
+  }
+
+  @override
+  void dispose() {
+    _searchBloc.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,15 +36,6 @@ class _MyWikiAppState extends State<MyWikiApp> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              _offlineMode
-                  ? Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        "No internet, trying offline content",
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    )
-                  : Container(),
               Container(
                 decoration: BoxDecoration(
                     color: Colors.white,
@@ -47,8 +45,8 @@ class _MyWikiAppState extends State<MyWikiApp> {
                   child: TextField(
                       textAlignVertical: TextAlignVertical.center,
                       maxLines: 1,
-                      onChanged: (String txt) {
-                        _fetchResults(txt);
+                      onChanged: (String searchWord) async {
+                        _searchBloc.searchEventSink.add(searchWord);
                       },
                       controller: _searchbar,
                       decoration: InputDecoration(
@@ -66,119 +64,64 @@ class _MyWikiAppState extends State<MyWikiApp> {
                       )),
                 ),
               ),
-              _loading
-                  ? Padding(
-                      padding: const EdgeInsets.all(30.0),
-                      child: CircularProgressIndicator(),
-                    )
-                  : Expanded(
-                      flex: 7,
-                      child: _resultsToBeDisplayed.isEmpty
-                          ? Opacity(
-                              opacity: 0.6,
-                              child: Image.asset("images/wiki_placeholder.png",
-                                  height: 200, width: 200),
-                            )
-                          : ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: _resultsToBeDisplayed.length,
-                              itemBuilder: (BuildContext context, int index) {
-                                var curResult = _resultsToBeDisplayed[index];
-                                return Padding(
-                                    padding:
-                                        const EdgeInsets.fromLTRB(0, 8, 0, 8),
-                                    child: SearchResultCard(curResult));
-                              }),
-                    )
+              Expanded(
+                flex: 7,
+                child: StreamBuilder(
+                    stream: _searchBloc.searchResultStream,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return Padding(
+                          padding: const EdgeInsets.all(30.0),
+                          child: Text("Something went wrong. Try again later"),
+                        );
+                      }
+
+                      if (snapshot.hasData) {
+                        List<SearchResult> results = snapshot.data;
+
+                        return SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              _searchBloc.offlineContent
+                                  ? Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        "No internet, trying offline content",
+                                        style: TextStyle(color: Colors.red),
+                                      ),
+                                    )
+                                  : Container(),
+                              results.isEmpty
+                                  ? Opacity(
+                                      opacity: 0.6,
+                                      child: Image.asset(
+                                          "images/wiki_placeholder.png",
+                                          height: 200,
+                                          width: 200),
+                                    )
+                                  : ListView.builder(
+                                      shrinkWrap: true,
+                                      itemCount: results.length,
+                                      itemBuilder:
+                                          (BuildContext context, int index) {
+                                        var curResult = results[index];
+                                        return Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                                0, 8, 0, 8),
+                                            child: SearchResultCard(curResult));
+                                      }),
+                            ],
+                          ),
+                        );
+                      } else {
+                        return Center(child: CircularProgressIndicator());
+                      }
+                    }),
+              )
             ],
           ),
         ),
       ),
     );
-  }
-
-  void _fetchResults(String searchWord) async {
-    if (await checkInternetConnectivity()) {
-      _fetchResultsInternet(searchWord);
-    } else {
-      _fetchResultsCache(searchWord);
-    }
-  }
-
-  void _fetchResultsCache(String searchWord) async {
-    _offlineMode = true;
-    try {
-      _loading = true;
-      setState(() {});
-
-      var prefs = await SharedPreferences.getInstance();
-      Set<String> keys = prefs.getKeys();
-      _resultsToBeDisplayed = [];
-
-      if (searchWord.isNotEmpty) {
-        for (String key in keys) {
-          if (key.toLowerCase().contains(searchWord.toLowerCase())) {
-            List<String> values = prefs.getStringList(key);
-
-            SearchResult current = SearchResult();
-
-            current.title = key;
-            current.description = values[0];
-            current.thumbnail = values[1];
-            current.pageid = int.parse(values[2]);
-            _resultsToBeDisplayed.add(current);
-          }
-        }
-      }
-
-      _loading = false;
-      setState(() {});
-    } catch (e) {
-      _loading = false;
-      setState(() {});
-      showAlert(
-        context,
-        "Oops!",
-        Text("Something went wrong. Try again later"),
-      );
-    }
-  }
-
-  void _fetchResultsInternet(String searchWord) async {
-    _offlineMode = false;
-    try {
-      String apiUrl =
-          'https://en.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages|pageterms&generator=prefixsearch&redirects=1&formatversion=2&piprop=thumbnail&pithumbsize=50&pilimit=10&wbptterms=description&gpssearch=$searchWord&gpslimit=10';
-
-      _loading = true;
-      setState(() {});
-      var result = await http.get(apiUrl);
-      var jsonResponse = convert.jsonDecode(result.body);
-      List searchResultsList =
-          (jsonResponse["query"] != null) ? jsonResponse["query"]["pages"] : [];
-      _resultsToBeDisplayed = [];
-      for (var result in searchResultsList) {
-        SearchResult current = SearchResult();
-        current.title = capitalizeFirstLetter(result["title"] ?? "");
-        current.thumbnail = (result["thumbnail"] != null)
-            ? (result["thumbnail"]["source"] ?? "")
-            : "";
-        current.description = capitalizeFirstLetter((result["terms"] != null)
-            ? (result["terms"]["description"][0] ?? "")
-            : "");
-        current.pageid = result["pageid"];
-        _resultsToBeDisplayed.add(current);
-      }
-      _loading = false;
-      setState(() {});
-    } catch (e) {
-      _loading = false;
-      setState(() {});
-      showAlert(
-        context,
-        "Oops!",
-        Text("Something went wrong. Try again later"),
-      );
-    }
   }
 }
