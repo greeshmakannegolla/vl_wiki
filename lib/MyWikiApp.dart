@@ -12,17 +12,18 @@ class MyWikiApp extends StatefulWidget {
 
 class _MyWikiAppState extends State<MyWikiApp> {
   TextEditingController _searchbar = TextEditingController();
-  final _searchBloc = SearchResultBloc();
+  final _searchBloc = SearchResultBloc(); //Instance of bloc
 
   @override
   void initState() {
     super.initState();
-    _searchBloc.searchEventSink.add("");
+    _searchBloc.searchEventSink
+        .add(""); //To avoid display of loading spinner on start of the app
   }
 
   @override
   void dispose() {
-    _searchBloc.dispose();
+    _searchBloc.dispose(); //To avoid memory leak
     super.dispose();
   }
 
@@ -46,7 +47,8 @@ class _MyWikiAppState extends State<MyWikiApp> {
                       textAlignVertical: TextAlignVertical.center,
                       maxLines: 1,
                       onChanged: (String searchWord) async {
-                        _searchBloc.searchEventSink.add(searchWord);
+                        _searchBloc.searchEventSink.add(
+                            searchWord); //Passing search word as input to event sink
                       },
                       controller: _searchbar,
                       decoration: InputDecoration(
@@ -67,7 +69,8 @@ class _MyWikiAppState extends State<MyWikiApp> {
               Expanded(
                 flex: 7,
                 child: StreamBuilder(
-                    stream: _searchBloc.searchResultStream,
+                    stream: _searchBloc
+                        .searchResultStream, //Listening to output stream
                     builder: (context, snapshot) {
                       if (snapshot.hasError) {
                         return Padding(
@@ -77,12 +80,14 @@ class _MyWikiAppState extends State<MyWikiApp> {
                       }
 
                       if (snapshot.hasData) {
-                        List<SearchResult> results = snapshot.data;
+                        List<SearchResult> results = snapshot
+                            .data; //List of search results based on search word
 
                         return SingleChildScrollView(
                           child: Column(
                             children: [
-                              _searchBloc.offlineContent
+                              _searchBloc
+                                      .offlineContent //Check if content is from cache, if yes, display offline message accordingly
                                   ? Padding(
                                       padding: const EdgeInsets.all(8.0),
                                       child: Text(
@@ -94,12 +99,19 @@ class _MyWikiAppState extends State<MyWikiApp> {
                               results.isEmpty
                                   ? Padding(
                                       padding: const EdgeInsets.only(top: 200),
-                                      child: Opacity(
-                                        opacity: 0.6,
-                                        child: Image.asset(
-                                            "images/wiki_placeholder.png",
-                                            height: 200,
-                                            width: 200),
+                                      child: Column(
+                                        children: [
+                                          Opacity(
+                                            opacity: 0.6,
+                                            child: Image.asset(
+                                                "images/wiki_placeholder.png",
+                                                height: 200,
+                                                width: 200),
+                                          ),
+                                          (_searchbar.text != "")
+                                              ? Text("No search results")
+                                              : Container()
+                                        ],
                                       ),
                                     )
                                   : ListView.builder(

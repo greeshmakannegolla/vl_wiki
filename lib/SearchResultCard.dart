@@ -5,7 +5,7 @@ import 'package:wiki/WikiWebView.dart';
 
 class SearchResultCard extends StatelessWidget {
   SearchResultCard(this._searchResult);
-  final SearchResult _searchResult;
+  final SearchResult _searchResult; //Instance of model
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +14,8 @@ class SearchResultCard extends StatelessWidget {
         _searchResult.thumbnail.isEmpty
             ? Image.asset("images/no_image.png", width: 50)
             : CachedNetworkImage(
-                imageUrl: _searchResult.thumbnail,
+                imageUrl: _searchResult
+                    .thumbnail, //Using CachedNetworkImage plugin to display offline image
                 width: 50,
               ),
         Expanded(

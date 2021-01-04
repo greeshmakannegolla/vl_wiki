@@ -36,6 +36,7 @@ class SearchResultBloc {
     _searchEventStreamController.close();
   }
 
+// Fetching results and set offlineContent flag according to network availability
   Future<List<SearchResult>> _fetchResults(String searchWord) async {
     if (await checkInternetConnectivity()) {
       offlineContent = false;
@@ -51,8 +52,9 @@ class SearchResultBloc {
 
     if (searchWord.isNotEmpty) {
       var prefs = await SharedPreferences.getInstance();
-      Set<String> keys = prefs.getKeys();
+      Set<String> keys = prefs.getKeys(); //Gets all titles from cache
 
+      //Checks if the required title exists or not
       for (String key in keys) {
         if (key.toLowerCase().contains(searchWord.toLowerCase())) {
           List<String> values = prefs.getStringList(key);
@@ -62,7 +64,8 @@ class SearchResultBloc {
           current.title = key;
           current.description = values[0];
           current.thumbnail = values[1];
-          current.pageid = int.parse(values[2]);
+          current.pageid =
+              int.parse(values[2]); //Reading data as stored in WikiWebView.dart
           results.add(current);
         }
       }
@@ -78,10 +81,13 @@ class SearchResultBloc {
 
     var result = await http.get(apiUrl);
     var jsonResponse = convert.jsonDecode(result.body);
-    List searchResultsList =
-        (jsonResponse["query"] != null) ? jsonResponse["query"]["pages"] : [];
+    List searchResultsList = (jsonResponse["query"] != null)
+        ? jsonResponse["query"]["pages"] ?? []
+        : [];
+    //For converting Json format into model
     for (var result in searchResultsList) {
-      SearchResult current = SearchResult();
+      SearchResult current = SearchResult(); //Instance of model
+
       current.title = capitalizeFirstLetter(result["title"] ?? "");
       current.thumbnail = (result["thumbnail"] != null)
           ? (result["thumbnail"]["source"] ?? "")

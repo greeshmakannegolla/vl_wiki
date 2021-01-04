@@ -34,7 +34,7 @@ class _WikiWebViewState extends State<WikiWebView> {
 
   void _prepareURL() {
     checkInternetConnectivity().then((internetActive) async {
-      String directory;
+      String directory = "";
       if (Platform.isAndroid) {
         directory = (await getExternalStorageDirectory()).path;
       }
@@ -63,13 +63,15 @@ class _WikiWebViewState extends State<WikiWebView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.black, //Color(0xffc0c0c0),
+        backgroundColor: Colors.black,
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.white),
       ),
       backgroundColor: Colors.white,
       body: _url == null
-          ? Center(child: CircularProgressIndicator())
+          ? Center(
+              child:
+                  CircularProgressIndicator()) //Until url is created, a circular progress indiccator is displayed
           : Column(children: <Widget>[
               _progress < 1.0
                   ? Padding(
@@ -94,9 +96,9 @@ class _WikiWebViewState extends State<WikiWebView> {
                     debuggingEnabled: true,
                   )),
                   onWebViewCreated: (InAppWebViewController controller) async {
-                    _webView = controller;
+                    _webView = controller; //Controller for web view
                   },
-                  onLoadStop:
+                  onLoadStop: //called when page loading is complete
                       (InAppWebViewController controller, String url) async {
                     String directory;
                     if (Platform.isAndroid &&
@@ -105,9 +107,11 @@ class _WikiWebViewState extends State<WikiWebView> {
                       await _webView.android.saveWebArchive(
                           basename:
                               '$directory/${widget.searchResult.pageid.toString()}.mht',
-                          autoname: false);
+                          autoname:
+                              false); //To save web page for offline viewing later
 
-                      var prefs = await SharedPreferences.getInstance();
+                      var prefs = await SharedPreferences
+                          .getInstance(); //Save metadata locally of the loaded web page
                       prefs.setStringList(widget.searchResult.title, [
                         widget.searchResult.description,
                         widget.searchResult.thumbnail,
@@ -117,12 +121,16 @@ class _WikiWebViewState extends State<WikiWebView> {
                   },
                   onProgressChanged:
                       (InAppWebViewController controller, int progress) async {
-                    setState(() {
-                      this._progress = progress / 100;
-                    });
+                    if (mounted) {
+                      setState(() {
+                        this._progress =
+                            progress / 100; //Indicates progress bar
+                      });
+                    }
                   },
                 ),
               ),
+              //Navigation within webpages
               ButtonBar(
                 alignment: MainAxisAlignment.center,
                 children: <Widget>[
